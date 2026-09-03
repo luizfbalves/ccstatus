@@ -26,15 +26,16 @@ DARK=$(rgb 128 128 128)
 RED=$(rgb 185 28 28)
 ORANGE=$(rgb 194 65 12)
 
-# ícones Nerd Font
+# ícones — formas geométricas básicas (■ ◆ ● ▲), presentes em praticamente
+# qualquer fonte; variantes com textura (▤▥▦) tendem a virar caixa vazia (tofu)
 ICON_ARROW="➜"
-ICON_BRANCH="⎇"
-ICON_DIRTY="✗"
-ICON_CLEAN="✔"
+ICON_BRANCH="◇"
+ICON_DIRTY="●"
+ICON_CLEAN="●"
 ICON_AHEAD="↑"
 ICON_BEHIND="↓"
 ICON_MODEL="◆"
-ICON_CTX="▤"
+ICON_CTX="▪"
 ICON_COST="$"
 ICON_ADD="+"
 ICON_DEL="-"
