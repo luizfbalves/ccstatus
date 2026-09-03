@@ -72,6 +72,8 @@ Para mudar os pontos do gradiente: editar os RGBs em `pct_rgb` (e o bloco equiva
 
 ## Preview
 
+![Exemplo da ccstatus rodando no terminal](docs/preview.png)
+
 ```
 ➜ ⋆ orulpro │ ⬦ main ⬤ │ ⬥ Sonnet 5 │ ◔ ▓▓▓▓▓▓░░░░ 55% 550k/1.0M │ $ $1.95 +69-37 │ 5h ▓▓▓░░░ 55% →12h33  7d ▓▓░░░░ 26% →Sun
 ```
