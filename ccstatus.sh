@@ -13,16 +13,18 @@ BOLD='\033[1m'
 # truecolor 24-bit (fg)
 rgb() { printf '\033[38;2;%s;%s;%sm' "$1" "$2" "$3"; }
 
-GREEN=$(rgb 88 214 141)
-LIME=$(rgb 163 228 106)
-CYAN=$(rgb 86 214 219)
-BLUE=$(rgb 97 175 239)
-PURPLE=$(rgb 198 149 246)
-PINK=$(rgb 246 138 197)
-GREY=$(rgb 133 141 155)
-DARK=$(rgb 70 76 88)
-RED=$(rgb 235 100 100)
-ORANGE=$(rgb 232 154 76)
+# tons médios/saturados (estilo tailwind-600) — contraste ok tanto em terminal
+# claro quanto escuro; pastéis claros somem no claro, quase-pretos somem no escuro.
+GREEN=$(rgb 21 128 61)
+LIME=$(rgb 77 124 15)
+CYAN=$(rgb 14 116 144)
+BLUE=$(rgb 29 78 216)
+PURPLE=$(rgb 124 58 237)
+PINK=$(rgb 190 24 93)
+GREY=$(rgb 100 105 120)
+DARK=$(rgb 128 128 128)
+RED=$(rgb 185 28 28)
+ORANGE=$(rgb 194 65 12)
 
 # ícones Nerd Font
 ICON_ARROW="➜"
@@ -50,16 +52,17 @@ fmt_tokens() {
 pct_rgb() {
   awk -v p="$1" 'BEGIN {
     if (p < 0) p = 0; if (p > 100) p = 100;
+    # verde(21,128,61) -> amber(180,131,15) -> vermelho(185,28,28)
     if (p <= 50) {
       t = p / 50.0;
-      r = 88  + t * (232 - 88);
-      g = 214 + t * (208 - 214);
-      b = 141 + t * (76  - 141);
+      r = 21  + t * (180 - 21);
+      g = 128 + t * (131 - 128);
+      b = 61  + t * (15  - 61);
     } else {
       t = (p - 50) / 50.0;
-      r = 232 + t * (235 - 232);
-      g = 208 + t * (60  - 208);
-      b = 76  + t * (60  - 76);
+      r = 180 + t * (185 - 180);
+      g = 131 + t * (28  - 131);
+      b = 15  + t * (28  - 15);
     }
     printf "%d %d %d", r, g, b
   }'
@@ -97,8 +100,8 @@ cost_part=""
 if [ -n "$cost_usd" ]; then
   cost_col=$(rgb $(awk -v v="$cost_usd" 'BEGIN {
     p = (v/30.0)*100; if (p > 100) p = 100;
-    if (p <= 50) { t=p/50.0; r=88+t*(232-88); g=214+t*(208-214); b=141+t*(76-141); }
-    else { t=(p-50)/50.0; r=232+t*(235-232); g=208+t*(60-208); b=76+t*(60-76); }
+    if (p <= 50) { t=p/50.0; r=21+t*(180-21); g=128+t*(131-128); b=61+t*(15-61); }
+    else { t=(p-50)/50.0; r=180+t*(185-180); g=131+t*(28-131); b=15+t*(28-15); }
     printf "%d %d %d", r, g, b
   }'))
   cost_fmt=$(awk -v v="$cost_usd" 'BEGIN { printf (v < 10 ? "$%.2f" : "$%.1f"), v }')
