@@ -86,6 +86,11 @@ bar() {
 arrow="${BOLD}${GREEN}${ICON_ARROW}${RESET}"
 dir_part="${BOLD}${CYAN}${dir}${RESET}"
 
+# ── estrela pulsante (baseada no tempo, muda a cada render) ────────────────────
+STAR_FRAMES=("✦" "✧" "⋆" "·" "⋆" "✧")
+star_idx=$(( $(date +%s) % ${#STAR_FRAMES[@]} ))
+star_part="${ORANGE}${STAR_FRAMES[$star_idx]}${RESET}"
+
 # ── modelo ────────────────────────────────────────────────────────────────────
 model_name=$(echo "$input" | jq -r '.model.display_name // .model.id // empty')
 model_part=""
@@ -180,7 +185,7 @@ fi
 
 SEP="${DARK} │ ${RESET}"
 
-parts="$arrow  $dir_part"
+parts="$arrow $star_part $dir_part"
 [ -n "$git_part" ]   && parts="${parts}${SEP}${git_part}"
 [ -n "$model_part" ] && parts="${parts}${SEP}${model_part}"
 [ -n "$ctx_part" ]   && parts="${parts}${SEP}${ctx_part}"
