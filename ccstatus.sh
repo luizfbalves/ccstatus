@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Claude Code statusLine — tema "robbyrussell" + modelo, barras de contexto e rate limits.
+# Claude Code statusLine — tema "robbyrussell" + truecolor + ícones Nerd Font.
 
 input=$(cat)
 
@@ -10,10 +10,33 @@ RESET='\033[0m'
 DIM='\033[2m'
 BOLD='\033[1m'
 
-# paleta 256 cores
-c()  { printf '\033[38;5;%sm' "$1"; }
-GREEN=$(c 76); LIME=$(c 154); YELLOW=$(c 220); ORANGE=$(c 208); RED=$(c 203)
-CYAN=$(c 44); BLUE=$(c 75); PURPLE=$(c 141); PINK=$(c 211); GREY=$(c 244); DARK=$(c 238)
+# truecolor 24-bit (fg)
+rgb() { printf '\033[38;2;%s;%s;%sm' "$1" "$2" "$3"; }
+
+GREEN=$(rgb 88 214 141)
+LIME=$(rgb 163 228 106)
+CYAN=$(rgb 86 214 219)
+BLUE=$(rgb 97 175 239)
+PURPLE=$(rgb 198 149 246)
+PINK=$(rgb 246 138 197)
+GREY=$(rgb 133 141 155)
+DARK=$(rgb 70 76 88)
+RED=$(rgb 235 100 100)
+ORANGE=$(rgb 232 154 76)
+
+# ícones Nerd Font
+ICON_ARROW="➜"
+ICON_BRANCH="⎇"
+ICON_DIRTY="✗"
+ICON_CLEAN="✔"
+ICON_AHEAD="↑"
+ICON_BEHIND="↓"
+ICON_MODEL="◆"
+ICON_CTX="▤"
+ICON_COST="$"
+ICON_ADD="+"
+ICON_DEL="-"
+ICON_CLOCK="→"
 
 fmt_tokens() {
   awk -v n="$1" 'BEGIN {
@@ -23,37 +46,47 @@ fmt_tokens() {
   }'
 }
 
-# cor conforme percentual de uso (baixo = verde, alto = vermelho)
-pct_color() {
+# gradiente contínuo truecolor: 0%=verde, 50%=amarelo, 100%=vermelho
+pct_rgb() {
   awk -v p="$1" 'BEGIN {
-    if (p < 40) print 76;
-    else if (p < 60) print 154;
-    else if (p < 75) print 220;
-    else if (p < 90) print 208;
-    else print 203;
+    if (p < 0) p = 0; if (p > 100) p = 100;
+    if (p <= 50) {
+      t = p / 50.0;
+      r = 88  + t * (232 - 88);
+      g = 214 + t * (208 - 214);
+      b = 141 + t * (76  - 141);
+    } else {
+      t = (p - 50) / 50.0;
+      r = 232 + t * (235 - 232);
+      g = 208 + t * (60  - 208);
+      b = 76  + t * (60  - 76);
+    }
+    printf "%d %d %d", r, g, b
   }'
 }
 
-# barra de progresso: bar <pct> <largura>
+pct_color() { rgb $(pct_rgb "$1"); }
+
+# barra de progresso truecolor: bar <pct> <largura>
 bar() {
   local pct=$1 width=${2:-10}
   local filled
   filled=$(awk -v p="$pct" -v w="$width" 'BEGIN { f=int(p*w/100 + 0.5); if (f>w) f=w; if (f<0) f=0; print f }')
   local col; col=$(pct_color "$pct")
-  printf '\033[38;5;%sm' "$col"
-  for ((i=0; i<filled; i++)); do printf '█'; done
-  printf '\033[38;5;238m'
+  printf '%b' "$col"
+  for ((i=0; i<filled; i++)); do printf '▓'; done
+  printf '%b' "$DARK"
   for ((i=filled; i<width; i++)); do printf '░'; done
   printf '%b' "$RESET"
 }
 
-arrow="${BOLD}${GREEN}➜${RESET}"
+arrow="${BOLD}${GREEN}${ICON_ARROW}${RESET}"
 dir_part="${BOLD}${CYAN}${dir}${RESET}"
 
 # ── modelo ────────────────────────────────────────────────────────────────────
 model_name=$(echo "$input" | jq -r '.model.display_name // .model.id // empty')
 model_part=""
-[ -n "$model_name" ] && model_part="${PURPLE}◆ ${BOLD}${model_name}${RESET}"
+[ -n "$model_name" ] && model_part="${PURPLE}${ICON_MODEL} ${BOLD}${model_name}${RESET}"
 
 # ── custo da sessão ───────────────────────────────────────────────────────────
 cost_usd=$(echo "$input" | jq -r '.cost.total_cost_usd // empty')
@@ -62,18 +95,17 @@ lines_del=$(echo "$input" | jq -r '.cost.total_lines_removed // empty')
 
 cost_part=""
 if [ -n "$cost_usd" ]; then
-  cost_col=$(awk -v v="$cost_usd" 'BEGIN {
-    if (v < 1) print 76;
-    else if (v < 5) print 154;
-    else if (v < 15) print 220;
-    else if (v < 30) print 208;
-    else print 203;
-  }')
+  cost_col=$(rgb $(awk -v v="$cost_usd" 'BEGIN {
+    p = (v/30.0)*100; if (p > 100) p = 100;
+    if (p <= 50) { t=p/50.0; r=88+t*(232-88); g=214+t*(208-214); b=141+t*(76-141); }
+    else { t=(p-50)/50.0; r=232+t*(235-232); g=208+t*(60-208); b=76+t*(60-76); }
+    printf "%d %d %d", r, g, b
+  }'))
   cost_fmt=$(awk -v v="$cost_usd" 'BEGIN { printf (v < 10 ? "$%.2f" : "$%.1f"), v }')
-  cost_part="$(printf '\033[38;5;%sm' "$cost_col")\$${cost_fmt#\$}${RESET}"
+  cost_part="${cost_col}${ICON_COST} ${cost_fmt}${RESET}"
   diff_part=""
   if [ -n "$lines_add" ] && [ -n "$lines_del" ] && [ $((lines_add + lines_del)) -gt 0 ] 2>/dev/null; then
-    diff_part=" ${DIM}${LIME}+${lines_add}${RESET}${DIM}${RED}-${lines_del}${RESET}"
+    diff_part=" ${DIM}${LIME}${ICON_ADD}${lines_add}${RESET}${DIM}${RED}${ICON_DEL}${lines_del}${RESET}"
   fi
   cost_part="${cost_part}${diff_part}"
 fi
@@ -87,9 +119,9 @@ if git -C "$cwd" --no-optional-locks rev-parse --is-inside-work-tree >/dev/null 
   status=$(git -C "$cwd" --no-optional-locks status --porcelain 2>/dev/null)
   if [ -n "$status" ]; then
     n=$(printf '%s\n' "$status" | grep -c .)
-    state="${RED}✗${n}${RESET}"
+    state="${RED}${ICON_DIRTY} ${n}${RESET}"
   else
-    state="${GREEN}✔${RESET}"
+    state="${GREEN}${ICON_CLEAN}${RESET}"
   fi
 
   ahead_behind=$(git -C "$cwd" --no-optional-locks rev-list --left-right --count @{upstream}...HEAD 2>/dev/null)
@@ -97,12 +129,12 @@ if git -C "$cwd" --no-optional-locks rev-parse --is-inside-work-tree >/dev/null 
   if [ -n "$ahead_behind" ]; then
     behind=$(echo "$ahead_behind" | awk '{print $1}')
     ahead=$(echo "$ahead_behind" | awk '{print $2}')
-    [ "$ahead" -gt 0 ] 2>/dev/null && sync="${sync}${LIME}↑${ahead}${RESET}"
-    [ "$behind" -gt 0 ] 2>/dev/null && sync="${sync}${ORANGE}↓${behind}${RESET}"
+    [ "$ahead" -gt 0 ] 2>/dev/null && sync="${sync}${LIME}${ICON_AHEAD}${ahead}${RESET}"
+    [ "$behind" -gt 0 ] 2>/dev/null && sync="${sync}${ORANGE}${ICON_BEHIND}${behind}${RESET}"
     [ -n "$sync" ] && sync=" $sync"
   fi
 
-  git_part="${BLUE}git:(${PINK}${branch}${BLUE})${RESET} ${state}${sync}"
+  git_part="${BLUE}${ICON_BRANCH} ${PINK}${branch}${RESET} ${state}${sync}"
 fi
 
 # ── contexto ──────────────────────────────────────────────────────────────────
@@ -114,7 +146,7 @@ ctx_part=""
 if [ -n "$used_tokens" ] && [ -n "$limit_tokens" ]; then
   [ -z "$used_pct" ] && used_pct=$(awk -v u="$used_tokens" -v l="$limit_tokens" 'BEGIN{ printf "%.1f", (l>0? u*100/l : 0) }')
   col=$(pct_color "$used_pct")
-  ctx_part="${GREY}ctx ${RESET}$(bar "$used_pct" 10) $(printf '\033[38;5;%sm' "$col")$(printf '%.0f%%' "$used_pct")${RESET} ${DIM}${GREY}$(fmt_tokens "$used_tokens")/$(fmt_tokens "$limit_tokens")${RESET}"
+  ctx_part="${GREY}${ICON_CTX} ${RESET}$(bar "$used_pct" 10) ${col}$(printf '%.0f%%' "$used_pct")${RESET} ${DIM}${GREY}$(fmt_tokens "$used_tokens")/$(fmt_tokens "$limit_tokens")${RESET}"
 fi
 
 # ── rate limits ───────────────────────────────────────────────────────────────
@@ -132,15 +164,15 @@ rate_part=""
 if [ -n "$five_pct" ]; then
   col=$(pct_color "$five_pct")
   suffix=""
-  [ -n "$five_reset_fmt" ] && suffix=" ${DIM}${GREY}→${five_reset_fmt}${RESET}"
-  rate_part="${GREY}5h ${RESET}$(bar "$five_pct" 6) $(printf '\033[38;5;%sm' "$col")$(printf '%.0f%%' "$five_pct")${RESET}${suffix}"
+  [ -n "$five_reset_fmt" ] && suffix=" ${DIM}${GREY}${ICON_CLOCK}${five_reset_fmt}${RESET}"
+  rate_part="${GREY}5h ${RESET}$(bar "$five_pct" 6) ${col}$(printf '%.0f%%' "$five_pct")${RESET}${suffix}"
 fi
 if [ -n "$week_pct" ]; then
   [ -n "$rate_part" ] && rate_part="${rate_part}  "
   col=$(pct_color "$week_pct")
   suffix=""
-  [ -n "$week_reset_fmt" ] && suffix=" ${DIM}${GREY}→${week_reset_fmt}${RESET}"
-  rate_part="${rate_part}${GREY}7d ${RESET}$(bar "$week_pct" 6) $(printf '\033[38;5;%sm' "$col")$(printf '%.0f%%' "$week_pct")${RESET}${suffix}"
+  [ -n "$week_reset_fmt" ] && suffix=" ${DIM}${GREY}${ICON_CLOCK}${week_reset_fmt}${RESET}"
+  rate_part="${rate_part}${GREY}7d ${RESET}$(bar "$week_pct" 6) ${col}$(printf '%.0f%%' "$week_pct")${RESET}${suffix}"
 fi
 
 SEP="${DARK} │ ${RESET}"
