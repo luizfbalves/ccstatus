@@ -1,8 +1,4 @@
-```
- ___________ / /____ _/ /___ _____
-/ __/ __(_-</ __/ _ `/ __/ // (_-<
-\__/\__/___/\__/\_,_/\__/\_,_/___/
-```
+![ccstatus](docs/title.png)
 
 Status line para o Claude Code CLI. Um script bash que lê JSON do stdin (payload passado pelo Claude Code a cada render) e imprime uma linha ANSI colorida com diretório, git, modelo, uso de contexto, custo da sessão e rate limits.
 
