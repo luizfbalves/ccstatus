@@ -51,6 +51,8 @@ O script lê um único JSON via stdin. Campos usados (todos opcionais — a seç
 | `context_window.used_percentage` | number | % pronto (senão é calculado) |
 | `rate_limits.five_hour.used_percentage` / `.resets_at` | number / epoch | barra da janela de 5h |
 | `rate_limits.seven_day.used_percentage` / `.resets_at` | number / epoch | barra da janela de 7d |
+| `fast_mode` | boolean | badge `⚡fast` ao lado do modelo quando `true` |
+| `effort` | string | badge `◎<nível>` (low/medium/high) ao lado do modelo quando `fast_mode` não está ativo |
 
 Git não vem no payload — o script roda `git -C "$cwd"` diretamente no diretório recebido.
 

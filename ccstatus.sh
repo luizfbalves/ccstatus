@@ -94,8 +94,18 @@ star_part="${BOLD}${ORANGE}${STAR_FRAMES[$star_idx]}${RESET}"
 
 # ── modelo ────────────────────────────────────────────────────────────────────
 model_name=$(echo "$input" | jq -r '.model.display_name // .model.id // empty')
+fast_mode=$(echo "$input" | jq -r '.fast_mode // empty')
+effort=$(echo "$input" | jq -r '.effort // empty')
+
+effort_badge=""
+if [ "$fast_mode" = "true" ]; then
+  effort_badge=" ${DIM}${ORANGE}⚡fast${RESET}"
+elif [ -n "$effort" ] && [ "$effort" != "null" ]; then
+  effort_badge=" ${DIM}${GREY}◎${effort}${RESET}"
+fi
+
 model_part=""
-[ -n "$model_name" ] && model_part="${BOLD}${PURPLE}${ICON_MODEL}${RESET} ${BOLD}${model_name}${RESET}"
+[ -n "$model_name" ] && model_part="${BOLD}${PURPLE}${ICON_MODEL}${RESET} ${BOLD}${model_name}${RESET}${effort_badge}"
 
 # ── custo da sessão ───────────────────────────────────────────────────────────
 cost_usd=$(echo "$input" | jq -r '.cost.total_cost_usd // empty')
