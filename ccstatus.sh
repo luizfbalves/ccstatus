@@ -29,13 +29,13 @@ ORANGE=$(rgb 194 65 12)
 # ícones — formas geométricas básicas (■ ◆ ● ▲), presentes em praticamente
 # qualquer fonte; variantes com textura (▤▥▦) tendem a virar caixa vazia (tofu)
 ICON_ARROW="➜"
-ICON_BRANCH="◇"
-ICON_DIRTY="●"
-ICON_CLEAN="●"
+ICON_BRANCH="⬦"
+ICON_DIRTY="⬤"
+ICON_CLEAN="⬤"
 ICON_AHEAD="↑"
 ICON_BEHIND="↓"
-ICON_MODEL="◆"
-ICON_CTX="▪"
+ICON_MODEL="⬥"
+ICON_CTX="◔"
 ICON_COST="$"
 ICON_ADD="+"
 ICON_DEL="-"
@@ -90,12 +90,12 @@ dir_part="${BOLD}${CYAN}${dir}${RESET}"
 # ── estrela pulsante (baseada no tempo, muda a cada render) ────────────────────
 STAR_FRAMES=("✦" "✧" "⋆" "·" "⋆" "✧")
 star_idx=$(( $(date +%s) % ${#STAR_FRAMES[@]} ))
-star_part="${ORANGE}${STAR_FRAMES[$star_idx]}${RESET}"
+star_part="${BOLD}${ORANGE}${STAR_FRAMES[$star_idx]}${RESET}"
 
 # ── modelo ────────────────────────────────────────────────────────────────────
 model_name=$(echo "$input" | jq -r '.model.display_name // .model.id // empty')
 model_part=""
-[ -n "$model_name" ] && model_part="${PURPLE}${ICON_MODEL} ${BOLD}${model_name}${RESET}"
+[ -n "$model_name" ] && model_part="${BOLD}${PURPLE}${ICON_MODEL}${RESET} ${BOLD}${model_name}${RESET}"
 
 # ── custo da sessão ───────────────────────────────────────────────────────────
 cost_usd=$(echo "$input" | jq -r '.cost.total_cost_usd // empty')
@@ -111,7 +111,7 @@ if [ -n "$cost_usd" ]; then
     printf "%d %d %d", r, g, b
   }'))
   cost_fmt=$(awk -v v="$cost_usd" 'BEGIN { printf (v < 10 ? "$%.2f" : "$%.1f"), v }')
-  cost_part="${cost_col}${ICON_COST} ${cost_fmt}${RESET}"
+  cost_part="${BOLD}${cost_col}${ICON_COST}${RESET} ${cost_col}${cost_fmt}${RESET}"
   diff_part=""
   if [ -n "$lines_add" ] && [ -n "$lines_del" ] && [ $((lines_add + lines_del)) -gt 0 ] 2>/dev/null; then
     diff_part=" ${DIM}${LIME}${ICON_ADD}${lines_add}${RESET}${DIM}${RED}${ICON_DEL}${lines_del}${RESET}"
@@ -128,9 +128,9 @@ if git -C "$cwd" --no-optional-locks rev-parse --is-inside-work-tree >/dev/null 
   status=$(git -C "$cwd" --no-optional-locks status --porcelain 2>/dev/null)
   if [ -n "$status" ]; then
     n=$(printf '%s\n' "$status" | grep -c .)
-    state="${RED}${ICON_DIRTY} ${n}${RESET}"
+    state="${BOLD}${RED}${ICON_DIRTY}${RESET} ${n}"
   else
-    state="${GREEN}${ICON_CLEAN}${RESET}"
+    state="${BOLD}${GREEN}${ICON_CLEAN}${RESET}"
   fi
 
   ahead_behind=$(git -C "$cwd" --no-optional-locks rev-list --left-right --count @{upstream}...HEAD 2>/dev/null)
@@ -138,12 +138,12 @@ if git -C "$cwd" --no-optional-locks rev-parse --is-inside-work-tree >/dev/null 
   if [ -n "$ahead_behind" ]; then
     behind=$(echo "$ahead_behind" | awk '{print $1}')
     ahead=$(echo "$ahead_behind" | awk '{print $2}')
-    [ "$ahead" -gt 0 ] 2>/dev/null && sync="${sync}${LIME}${ICON_AHEAD}${ahead}${RESET}"
-    [ "$behind" -gt 0 ] 2>/dev/null && sync="${sync}${ORANGE}${ICON_BEHIND}${behind}${RESET}"
+    [ "$ahead" -gt 0 ] 2>/dev/null && sync="${sync}${BOLD}${LIME}${ICON_AHEAD}${RESET}${ahead}"
+    [ "$behind" -gt 0 ] 2>/dev/null && sync="${sync}${BOLD}${ORANGE}${ICON_BEHIND}${RESET}${behind}"
     [ -n "$sync" ] && sync=" $sync"
   fi
 
-  git_part="${BLUE}${ICON_BRANCH} ${PINK}${branch}${RESET} ${state}${sync}"
+  git_part="${BOLD}${BLUE}${ICON_BRANCH}${RESET} ${PINK}${branch}${RESET} ${state}${sync}"
 fi
 
 # ── contexto ──────────────────────────────────────────────────────────────────
@@ -155,7 +155,7 @@ ctx_part=""
 if [ -n "$used_tokens" ] && [ -n "$limit_tokens" ]; then
   [ -z "$used_pct" ] && used_pct=$(awk -v u="$used_tokens" -v l="$limit_tokens" 'BEGIN{ printf "%.1f", (l>0? u*100/l : 0) }')
   col=$(pct_color "$used_pct")
-  ctx_part="${GREY}${ICON_CTX} ${RESET}$(bar "$used_pct" 10) ${col}$(printf '%.0f%%' "$used_pct")${RESET} ${DIM}${GREY}$(fmt_tokens "$used_tokens")/$(fmt_tokens "$limit_tokens")${RESET}"
+  ctx_part="${BOLD}${GREY}${ICON_CTX}${RESET} $(bar "$used_pct" 10) ${col}$(printf '%.0f%%' "$used_pct")${RESET} ${DIM}${GREY}$(fmt_tokens "$used_tokens")/$(fmt_tokens "$limit_tokens")${RESET}"
 fi
 
 # ── rate limits ───────────────────────────────────────────────────────────────

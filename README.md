@@ -61,7 +61,7 @@ Git não vem no payload — o script roda `git -C "$cwd"` diretamente no diretó
 - `pct_color <pct>` — mesma coisa que `pct_rgb`, já formatada como escape ANSI pronto para `printf`
 - `bar <pct> <largura>` — desenha barra `▓`/`░` de `largura` colunas (default 10 para contexto, 6 para rate limits), colorida via `pct_color`
 - `fmt_tokens <n>` — formata `50000` → `50k`, `1500000` → `1.5M`
-- Ícones são formas geométricas básicas (`➜ ◇ ● ↑ ↓ ◆ ▪ $ →`), sem depender de Nerd Font — evite variantes com textura tipo `▤▥▦` (Geometric Shapes menos comuns), que viram caixa vazia (tofu) em muitas fontes mesmo quando `■◆●▲` ao lado funcionam; git dirty/clean usa `●` colorido (vermelho/verde) em vez de check/x, no estilo do indicador do VS Code
+- Ícones usam variantes "medium/large" do Unicode (`➜ ⬦ ⬤ ↑ ↓ ⬥ ◔ $ →`) do bloco Miscellaneous Symbols and Arrows — visualmente mais pesados que os básicos `◇◆●`, mas com suporte de fonte um pouco menos garantido (mais recentes, ~2008); se algum virar caixa vazia (tofu) num terminal específico, trocar pela variante clássica do mesmo formato (ex.: `⬥`→`◆`, `⬤`→`●`, `⬦`→`◇`) resolve sem mudar o resto do layout. Todos os ícones são envolvidos em `${BOLD}` para reforçar o peso visual. Git dirty/clean usa `⬤` colorido (vermelho/verde) em vez de check/x, no estilo do indicador do VS Code
 - `STAR_FRAMES` — estrela pulsante (`✦ ✧ ⋆ · ⋆ ✧`) logo após a seta, trocando de frame a cada segundo (`date +%s % tamanho do array`); é o único elemento "animado" — não há mascote/imagem, statusline é texto puro re-renderizado a cada tick do Claude Code, então o efeito é uma sequência de frames por tempo, não animação fluida
 - Cada seção da linha (`git_part`, `model_part`, `cost_part`, `ctx_part`, `rate_part`) é montada isoladamente e só concatenada ao final se não-vazia, separada por `SEP` (` │ ` em cinza médio)
 - A paleta (`GREEN`, `RED`, `GREY`, `DARK`, etc., topo do arquivo) usa tons médio-saturados (estilo "600" do Tailwind) escolhidos para manter contraste tanto em terminal claro quanto escuro — evite voltar a pastéis claros ou quase-pretos, eles só funcionam bem num dos dois temas
@@ -71,7 +71,7 @@ Para mudar os pontos do gradiente: editar os RGBs em `pct_rgb` (e o bloco equiva
 ## Preview
 
 ```
-➜ ✦ orulpro │ ◇ main ● │ ◆ Sonnet 5 │ ▪ ▓▓▓▓▓▓░░░░ 55% 550k/1.0M │ $ $1.95 +69-37 │ 5h ▓▓▓░░░ 55% →12h33  7d ▓▓░░░░ 26% →Sun
+➜ ⋆ orulpro │ ⬦ main ⬤ │ ⬥ Sonnet 5 │ ◔ ▓▓▓▓▓▓░░░░ 55% 550k/1.0M │ $ $1.95 +69-37 │ 5h ▓▓▓░░░ 55% →12h33  7d ▓▓░░░░ 26% →Sun
 ```
 
 Requer terminal com suporte a truecolor (24-bit ANSI) — a maioria dos emuladores modernos (iTerm2, Terminal.app, Windows Terminal, Alacritty, kitty, WezTerm) já suporta por padrão. Sem Nerd Font necessária.
