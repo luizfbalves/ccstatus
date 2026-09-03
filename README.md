@@ -56,19 +56,24 @@ Git não vem no payload — o script roda `git -C "$cwd"` diretamente no diretó
 
 ## Estrutura interna (para quem for editar)
 
-- `c()` — helper que gera escape ANSI 256-cor a partir de um código
-- `pct_color <pct>` — mapeia percentual → código de cor (76 verde / 154 lima / 220 amarelo / 208 laranja / 203 vermelho), limiares em 40/60/75/90
-- `bar <pct> <largura>` — desenha barra `█`/`░` de `largura` colunas (default 10), colorida via `pct_color`
+- `rgb <r> <g> <b>` — helper que gera escape ANSI truecolor (24-bit) a partir de componentes RGB (0-255)
+- `pct_rgb <pct>` — interpola RGB num gradiente contínuo verde `(21,128,61)` → âmbar `(180,120,16)` → vermelho `(185,28,28)`, sem degraus fixos
+- `pct_color <pct>` — mesma coisa que `pct_rgb`, já formatada como escape ANSI pronto para `printf`
+- `bar <pct> <largura>` — desenha barra `▓`/`░` de `largura` colunas (default 10 para contexto, 6 para rate limits), colorida via `pct_color`
 - `fmt_tokens <n>` — formata `50000` → `50k`, `1500000` → `1.5M`
-- Cada seção da linha (`git_part`, `model_part`, `cost_part`, `ctx_part`, `rate_part`) é montada isoladamente e só concatenada ao final se não-vazia, separada por `SEP` (` │ ` em cinza escuro)
+- Ícones são unicode simples (`➜ ⎇ ✗ ✔ ↑ ↓ ◆ ▤ $ →`), sem depender de Nerd Font — funcionam em qualquer terminal/fonte padrão
+- Cada seção da linha (`git_part`, `model_part`, `cost_part`, `ctx_part`, `rate_part`) é montada isoladamente e só concatenada ao final se não-vazia, separada por `SEP` (` │ ` em cinza médio)
+- A paleta (`GREEN`, `RED`, `GREY`, `DARK`, etc., topo do arquivo) usa tons médio-saturados (estilo "600" do Tailwind) escolhidos para manter contraste tanto em terminal claro quanto escuro — evite voltar a pastéis claros ou quase-pretos, eles só funcionam bem num dos dois temas
 
-Para mudar limiares de cor: editar os números em `pct_color`. Para mudar largura das barras: editar os literais `10`/`6` nas chamadas a `bar`. Para adicionar uma seção nova: seguir o padrão — montar `<nome>_part=""`, preencher condicionalmente, e adicionar `[ -n "$<nome>_part" ] && parts="${parts}${SEP}${<nome>_part}"` perto do final do arquivo, antes do `printf '%b' "$parts"`.
+Para mudar os pontos do gradiente: editar os RGBs em `pct_rgb` (e o bloco equivalente inline em `cost_part`, que usa a mesma fórmula escalada para o teto de custo). Para mudar largura das barras: editar os literais `10`/`6` nas chamadas a `bar`. Para adicionar uma seção nova: seguir o padrão — montar `<nome>_part=""`, preencher condicionalmente, e adicionar `[ -n "$<nome>_part" ] && parts="${parts}${SEP}${<nome>_part}"` perto do final do arquivo, antes do `printf '%b' "$parts"`.
 
 ## Preview
 
 ```
-➜  orulpro │ git:(main) ✗3 ↑2 │ ◆ Opus 5 │ ctx ██████░░░░ 55% 110k/200k │ $3.47 +156-23 │ 5h ███░░░ 55% →12h33  7d ██░░░░ 33% →Sun
+➜  orulpro │ ⎇ main ✔ │ ◆ Sonnet 5 │ ▤ ▓▓▓▓▓▓░░░░ 55% 550k/1.0M │ $ $1.95 +69-37 │ 5h ▓▓▓░░░ 55% →12h33  7d ▓▓░░░░ 26% →Sun
 ```
+
+Requer terminal com suporte a truecolor (24-bit ANSI) — a maioria dos emuladores modernos (iTerm2, Terminal.app, Windows Terminal, Alacritty, kitty, WezTerm) já suporta por padrão. Sem Nerd Font necessária.
 
 ## Atualizar depois de instalado
 
