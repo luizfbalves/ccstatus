@@ -24,14 +24,6 @@ Depois, editar `~/.claude/settings.json` (criar se não existir) e garantir a ch
 
 Se o arquivo já tiver outras chaves, fazer merge — não sobrescrever o settings.json inteiro. Não é necessário reiniciar o Claude Code; a statusline é reavaliada a cada render.
 
-### Ícones Nerd Font (opcional)
-
-Por padrão a linha usa só Unicode básico (funciona em qualquer fonte). Se o terminal usa uma [Nerd Font](https://www.nerdfonts.com/) v3, prefixar o comando com `CCSTATUS_ICONS=nerd` troca os ícones por glifos Nerd Font (pasta, branch powerline, robô, cérebro, timer etc.):
-
-```json
-"command": "CCSTATUS_ICONS=nerd bash \"~/.claude/ccstatus.sh\""
-```
-
 ### Dependências
 
 `bash`, `jq`, `git`, `awk`, `date` — todas usualmente já presentes em macOS/Linux. Sem dependências de rede, sem pacotes npm/pip. O script não escreve em disco nem faz chamadas externas; é puramente stdin → stdout.
@@ -59,35 +51,35 @@ O script lê um único JSON via stdin. Campos usados (todos opcionais — a seç
 | `context_window.used_percentage` | number | % pronto (senão é calculado) |
 | `rate_limits.five_hour.used_percentage` / `.resets_at` | number / epoch | barra da janela de 5h |
 | `rate_limits.seven_day.used_percentage` / `.resets_at` | number / epoch | barra da janela de 7d |
-| `fast_mode` | boolean | badge `⚡fast` ao lado do modelo quando `true` |
-| `effort` | string | badge `◎<nível>` (low/medium/high) ao lado do modelo quando `fast_mode` não está ativo |
+| `fast_mode` | boolean | badge `fast` ao lado do modelo quando `true` |
+| `effort` / `effort.level` | string \| object | badge `<nível>` (low/medium/high) ao lado do modelo quando `fast_mode` não está ativo |
 
 Git não vem no payload — o script roda `git -C "$cwd"` diretamente no diretório recebido.
 
 ## Estrutura interna (para quem for editar)
 
 - `rgb <r> <g> <b>` — helper que gera escape ANSI truecolor (24-bit) a partir de componentes RGB (0-255)
-- `pct_rgb <pct>` — interpola RGB num gradiente contínuo verde `(21,128,61)` → âmbar `(180,120,16)` → vermelho `(185,28,28)`, sem degraus fixos
-- `pct_color <pct>` — mesma coisa que `pct_rgb`, já formatada como escape ANSI pronto para `printf`
+- `pct_rgb <pct>` — interpola RGB num gradiente contínuo verde `(21,128,61)` → âmbar `(180,131,15)` → vermelho `(185,28,28)`
+- `pct_color <pct>` — o mesmo, já como escape ANSI. Também colore o custo, com $30 equivalendo a 100%
 - `bar <pct> <largura>` — desenha barra `▓`/`░` de `largura` colunas (default 10 para contexto, 6 para rate limits), colorida via `pct_color`
 - `fmt_tokens <n>` — formata `50000` → `50k`, `1500000` → `1.5M`
-- Ícones usam variantes "medium/large" do Unicode (`➜ ⬦ ⬤ ↑ ↓ ⬥ ◔ $ →`) do bloco Miscellaneous Symbols and Arrows — visualmente mais pesados que os básicos `◇◆●`, mas com suporte de fonte um pouco menos garantido (mais recentes, ~2008); se algum virar caixa vazia (tofu) num terminal específico, trocar pela variante clássica do mesmo formato (ex.: `⬥`→`◆`, `⬤`→`●`, `⬦`→`◇`) resolve sem mudar o resto do layout. Todos os ícones são envolvidos em `${BOLD}` para reforçar o peso visual. Git dirty/clean usa `⬤` colorido (vermelho/verde) em vez de check/x, no estilo do indicador do VS Code
-- `CCSTATUS_ICONS=nerd` sobrescreve as variáveis `ICON_*` com codepoints Nerd Font v3 (bloco logo após os defaults); sem a env var nada muda. Glifos `nf-md-*` ficam no plano U+F0000+ e exigem Nerd Font v3 — em v2 viram tofu
-- `STAR_FRAMES` — estrela pulsante (`✦ ✧ ⋆ · ⋆ ✧`) logo após a seta, trocando de frame a cada segundo (`date +%s % tamanho do array`); é o único elemento "animado" — não há mascote/imagem, statusline é texto puro re-renderizado a cada tick do Claude Code, então o efeito é uma sequência de frames por tempo, não animação fluida
 - Cada seção da linha (`git_part`, `model_part`, `cost_part`, `ctx_part`, `rate_part`) é montada isoladamente e só concatenada ao final se não-vazia, separada por `SEP` (` │ ` em cinza médio)
-- A paleta (`GREEN`, `RED`, `GREY`, `DARK`, etc., topo do arquivo) usa tons médio-saturados (estilo "600" do Tailwind) escolhidos para manter contraste tanto em terminal claro quanto escuro — evite voltar a pastéis claros ou quase-pretos, eles só funcionam bem num dos dois temas
+- A paleta (topo do arquivo) usa tons médio-saturados (estilo "600" do Tailwind) para manter contraste em terminal claro e escuro — pastéis claros e quase-pretos só funcionam num dos dois temas
+- `LC_ALL=C` garante ponto decimal e dia da semana em inglês em qualquer locale
 
-Para mudar os pontos do gradiente: editar os RGBs em `pct_rgb` (e o bloco equivalente inline em `cost_part`, que usa a mesma fórmula escalada para o teto de custo). Para mudar largura das barras: editar os literais `10`/`6` nas chamadas a `bar`. Para adicionar uma seção nova: seguir o padrão — montar `<nome>_part=""`, preencher condicionalmente, e adicionar `[ -n "$<nome>_part" ] && parts="${parts}${SEP}${<nome>_part}"` perto do final do arquivo, antes do `printf '%b' "$parts"`.
+Para mudar o gradiente: editar os RGBs em `pct_rgb`. Para mudar o teto de custo: editar o `30` em `cost_col`. Para mudar largura das barras: editar os literais `10`/`6` nas chamadas a `bar`. Para adicionar uma seção nova: seguir o padrão — montar `<nome>_part=""`, preencher condicionalmente, e adicionar `[ -n "$<nome>_part" ] && parts="${parts}${SEP}${<nome>_part}"` perto do final do arquivo, antes do `printf '%b' "$parts"`.
 
 ## Preview
 
 ![Exemplo da ccstatus rodando no terminal](docs/preview.png)
 
 ```
-➜ ⋆ orulpro │ ⬦ main ⬤ │ ⬥ Sonnet 5 │ ◔ ▓▓▓▓▓▓░░░░ 55% 550k/1.0M │ $ $1.95 +69-37 │ 5h ▓▓▓░░░ 55% →12h33  7d ▓▓░░░░ 26% →Sun
+orulpro │ main *3 │ Sonnet 5 │ ctx ▓▓▓▓▓▓░░░░ 55% 550k/1.0M │ $1.95 +69-37 │ 5h ▓▓▓░░░ 55% 12h33  7d ▓▓░░░░ 26% Sun
 ```
 
-Requer terminal com suporte a truecolor (24-bit ANSI) — a maioria dos emuladores modernos (iTerm2, Terminal.app, Windows Terminal, Alacritty, kitty, WezTerm) já suporta por padrão. Sem Nerd Font necessária.
+`*N` após a branch = arquivos modificados; `↑N`/`↓N` = commits à frente/atrás do upstream.
+
+Requer terminal com truecolor (24-bit ANSI) — iTerm2, Terminal.app, Windows Terminal, Alacritty, kitty e WezTerm já suportam. Funciona com qualquer fonte.
 
 ## Atualizar depois de instalado
 
