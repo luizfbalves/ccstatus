@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Claude Code statusLine — tema "robbyrussell" + truecolor + ícones Nerd Font.
 
+# saída sempre em inglês: ponto decimal e dia da semana em inglês, independente do locale
+export LC_ALL=C
+
 input=$(cat)
 
 cwd=$(echo "$input" | jq -r '.workspace.current_dir // .cwd // empty')
@@ -27,19 +30,38 @@ RED=$(rgb 185 28 28)
 ORANGE=$(rgb 194 65 12)
 
 # ícones — formas geométricas básicas (■ ◆ ● ▲), presentes em praticamente
-# qualquer fonte; variantes com textura (▤▥▦) tendem a virar caixa vazia (tofu)
+# qualquer fonte; variantes com textura (▤▥▦) tendem a virar caixa vazia (tofu).
+# CCSTATUS_ICONS=nerd troca para glifos Nerd Font (requer Nerd Font v3 no terminal).
 ICON_ARROW="➜"
+ICON_DIR=""
 ICON_BRANCH="⬦"
 ICON_DIRTY="⬤"
 ICON_CLEAN="⬤"
 ICON_AHEAD="↑"
 ICON_BEHIND="↓"
 ICON_MODEL="⬥"
+ICON_FAST="⚡"
+ICON_EFFORT="◎"
 ICON_CTX="◔"
 ICON_COST="$"
 ICON_ADD="+"
 ICON_DEL="-"
 ICON_CLOCK="→"
+
+if [ "$CCSTATUS_ICONS" = "nerd" ]; then
+  ICON_DIR=" "      # nf-fa-folder_open
+  ICON_BRANCH=""    # nf-pl-branch
+  ICON_DIRTY=""     # nf-oct-dot_fill
+  ICON_CLEAN=""
+  ICON_AHEAD=""     # nf-fa-arrow_up
+  ICON_BEHIND=""    # nf-fa-arrow_down
+  ICON_MODEL="󰚩"    # nf-md-robot
+  ICON_FAST="󱐋"     # nf-md-lightning_bolt
+  ICON_EFFORT="󰊚"   # nf-md-gauge
+  ICON_CTX="󰧑"      # nf-md-brain
+  ICON_COST=""      # nf-fa-dollar
+  ICON_CLOCK="󰔟 "   # nf-md-timer_outline
+fi
 
 fmt_tokens() {
   awk -v n="$1" 'BEGIN {
@@ -85,7 +107,7 @@ bar() {
 }
 
 arrow="${BOLD}${GREEN}${ICON_ARROW}${RESET}"
-dir_part="${BOLD}${CYAN}${dir}${RESET}"
+dir_part="${BOLD}${CYAN}${ICON_DIR}${dir}${RESET}"
 
 # ── estrela pulsante (baseada no tempo, muda a cada render) ────────────────────
 STAR_FRAMES=("✦" "✧" "⋆" "·" "⋆" "✧")
@@ -99,9 +121,9 @@ effort=$(echo "$input" | jq -r '.effort // empty')
 
 effort_badge=""
 if [ "$fast_mode" = "true" ]; then
-  effort_badge=" ${DIM}${ORANGE}⚡fast${RESET}"
+  effort_badge=" ${DIM}${ORANGE}${ICON_FAST}fast${RESET}"
 elif [ -n "$effort" ] && [ "$effort" != "null" ]; then
-  effort_badge=" ${DIM}${GREY}◎${effort}${RESET}"
+  effort_badge=" ${DIM}${GREY}${ICON_EFFORT}${effort}${RESET}"
 fi
 
 model_part=""

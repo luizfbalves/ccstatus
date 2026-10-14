@@ -24,6 +24,14 @@ Depois, editar `~/.claude/settings.json` (criar se não existir) e garantir a ch
 
 Se o arquivo já tiver outras chaves, fazer merge — não sobrescrever o settings.json inteiro. Não é necessário reiniciar o Claude Code; a statusline é reavaliada a cada render.
 
+### Ícones Nerd Font (opcional)
+
+Por padrão a linha usa só Unicode básico (funciona em qualquer fonte). Se o terminal usa uma [Nerd Font](https://www.nerdfonts.com/) v3, prefixar o comando com `CCSTATUS_ICONS=nerd` troca os ícones por glifos Nerd Font (pasta, branch powerline, robô, cérebro, timer etc.):
+
+```json
+"command": "CCSTATUS_ICONS=nerd bash \"~/.claude/ccstatus.sh\""
+```
+
 ### Dependências
 
 `bash`, `jq`, `git`, `awk`, `date` — todas usualmente já presentes em macOS/Linux. Sem dependências de rede, sem pacotes npm/pip. O script não escreve em disco nem faz chamadas externas; é puramente stdin → stdout.
@@ -64,6 +72,7 @@ Git não vem no payload — o script roda `git -C "$cwd"` diretamente no diretó
 - `bar <pct> <largura>` — desenha barra `▓`/`░` de `largura` colunas (default 10 para contexto, 6 para rate limits), colorida via `pct_color`
 - `fmt_tokens <n>` — formata `50000` → `50k`, `1500000` → `1.5M`
 - Ícones usam variantes "medium/large" do Unicode (`➜ ⬦ ⬤ ↑ ↓ ⬥ ◔ $ →`) do bloco Miscellaneous Symbols and Arrows — visualmente mais pesados que os básicos `◇◆●`, mas com suporte de fonte um pouco menos garantido (mais recentes, ~2008); se algum virar caixa vazia (tofu) num terminal específico, trocar pela variante clássica do mesmo formato (ex.: `⬥`→`◆`, `⬤`→`●`, `⬦`→`◇`) resolve sem mudar o resto do layout. Todos os ícones são envolvidos em `${BOLD}` para reforçar o peso visual. Git dirty/clean usa `⬤` colorido (vermelho/verde) em vez de check/x, no estilo do indicador do VS Code
+- `CCSTATUS_ICONS=nerd` sobrescreve as variáveis `ICON_*` com codepoints Nerd Font v3 (bloco logo após os defaults); sem a env var nada muda. Glifos `nf-md-*` ficam no plano U+F0000+ e exigem Nerd Font v3 — em v2 viram tofu
 - `STAR_FRAMES` — estrela pulsante (`✦ ✧ ⋆ · ⋆ ✧`) logo após a seta, trocando de frame a cada segundo (`date +%s % tamanho do array`); é o único elemento "animado" — não há mascote/imagem, statusline é texto puro re-renderizado a cada tick do Claude Code, então o efeito é uma sequência de frames por tempo, não animação fluida
 - Cada seção da linha (`git_part`, `model_part`, `cost_part`, `ctx_part`, `rate_part`) é montada isoladamente e só concatenada ao final se não-vazia, separada por `SEP` (` │ ` em cinza médio)
 - A paleta (`GREEN`, `RED`, `GREY`, `DARK`, etc., topo do arquivo) usa tons médio-saturados (estilo "600" do Tailwind) escolhidos para manter contraste tanto em terminal claro quanto escuro — evite voltar a pastéis claros ou quase-pretos, eles só funcionam bem num dos dois temas
