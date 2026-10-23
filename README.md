@@ -28,7 +28,7 @@ A versão antiga era um `statusLine` em `~/.claude/settings.json` apontando para
 |---|---|
 | diretório | `$.session.cwd()` (basename) |
 | git | `git status --porcelain=v2 --branch` via `$.process.run` |
-| modelo | `$.session.model()` |
+| modelo | `$.session.model()`, formatado de id para nome (`claude-opus-5-5` → `Opus 5.5`) |
 | effort | `effort` do último `turn.step` do loop principal |
 | contexto | `$.session.usage().context` |
 | custo | `$.session.usage().cost.usd` |

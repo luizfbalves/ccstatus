@@ -44,7 +44,20 @@ const fmtReset = (kind: string, iso: string | undefined) => {
     : `${String(d.getHours()).padStart(2, '0')}h${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-const basename = (path: string) => path.replace(/\/+$/, '').split('/').pop() || path
+// a API de mods só dá o id: claude-opus-5-5[1m] → Opus 5.5 (1M); claude-sonnet-4-5-20250929 → Sonnet 4.5
+const fmtModel = (id: string) => {
+  const long = /\[1m\]$/i.test(id) ? ' (1M)' : ''
+  const m = id
+    .replace(/\[.*\]$/, '')
+    .replace(/^(us\.|eu\.|global\.)?(anthropic\.)?claude-/, '')
+    .match(/^([a-z]+)(?:-(\d+))?(?:-(\d{1,2}))?(?:-\d{8})?(?:-v\d.*)?$/)
+  if (!m) return id
+  const [, family = '', major, minor] = m
+  const version = major ? ` ${major}${minor ? `.${minor}` : ''}` : ''
+  return family.charAt(0).toUpperCase() + family.slice(1) + version + long
+}
+
+const basename =(path: string) => path.replace(/\/+$/, '').split('/').pop() || path
 
 async function readGit($: EngineInterface, cwd: string): Promise<Git | null> {
   const { exitCode, stdout } = await $.process.run(
@@ -83,7 +96,7 @@ async function refresh($: EngineInterface) {
   const next: Snapshot = {
     dir: basename(cwd),
     git,
-    model,
+    model: fmtModel(model),
     effort,
     tokens: usage.context.tokens,
     window: usage.context.window,
