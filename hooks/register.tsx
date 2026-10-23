@@ -208,7 +208,7 @@ export const register: Register = on => {
     return (
       <Box flexDirection="column">
         {/* separador: linha longa quebrando dentro de uma Box de 1 linha, cortada na largura do terminal */}
-        <Box height={1} overflow="hidden">
+        <Box height={1} overflow="hidden" marginBottom={1}>
           <Text color={DARK}>{'─'.repeat(500)}</Text>
         </Box>
         <Text wrap="truncate-end">
