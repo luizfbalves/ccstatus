@@ -31,6 +31,7 @@ test('the band draws every section of the snapshot', async ($, on) => {
     expect(line).toContain('$1.95')
     expect(line).toContain('5h ▓▓▓░░░ 55%')
     expect(line).toContain('7d ▓▓░░░░ 26%')
+    expect(await ui.find({ type: 'Text', text: /^─+$/ })).toBeDefined()
     await ui.unmount()
   }
 })
