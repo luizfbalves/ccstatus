@@ -137,7 +137,7 @@ export const register: Register = on => {
     const s = await read($, snapshot)
     if (e.props.hasSurvey || s === null) return next(e)
 
-    const { Box, Text } = $.ui.resolve(e)
+    const { Box, Button, Text } = $.ui.resolve(e)
 
     const bar = (pct: number, width: number) => {
       const filled = Math.min(width, Math.max(0, Math.round((pct * width) / 100)))
@@ -224,14 +224,24 @@ export const register: Register = on => {
         <Box height={1} overflow="hidden" marginBottom={1}>
           <Text color={DARK}>{'─'.repeat(500)}</Text>
         </Box>
-        <Text wrap="truncate-end">
-          {parts.map((part, i) => (
-            <Text>
-              {i > 0 && <Text color={DARK}> │ </Text>}
-              {part}
+        <Box flexDirection="row" justifyContent="space-between">
+          <Box flexShrink={1}>
+            <Text wrap="truncate-end">
+              {parts.map((part, i) => (
+                <Text>
+                  {i > 0 && <Text color={DARK}> │ </Text>}
+                  {part}
+                </Text>
+              ))}
             </Text>
-          ))}
-        </Text>
+          </Box>
+          <Button
+            key="clear"
+            label="/clear"
+            dimColor
+            onPress={() => $.command.run({ command: 'clear' })}
+          />
+        </Box>
       </Box>
     )
   })

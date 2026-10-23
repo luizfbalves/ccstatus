@@ -36,6 +36,20 @@ test('the band draws every section of the snapshot', async ($, on) => {
   }
 })
 
+test('the clear button runs /clear', async ($, on) => {
+  on('state.get', () => ({ value: { value: SNAPSHOT, version: 1 } }))
+  const ran: string[] = []
+  on('command.run', (_, e) => {
+    ran.push(e.command)
+    return { text: '' }
+  })
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  await ui.press({ key: 'clear' })
+  expect(ran).toEqual(['clear'])
+  await ui.unmount()
+})
+
 test('with no snapshot the band is left to the engine', async ($, on) => {
   on('ui.render', ($, e) => {
     const { Text } = $.ui.resolve(e)
