@@ -1,6 +1,6 @@
 {
   "name": "ccstatus",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Colored status band: dir, git, model, context, cost and rate limits",
   "types": "./types/index.d.ts"
 }
