@@ -1,0 +1,5 @@
+{
+  "name": "ccstatus",
+  "owner": { "name": "luizfbalves" },
+  "plugins": [{ "name": "ccstatus", "source": "./" }]
+}

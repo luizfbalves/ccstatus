@@ -1,86 +1,74 @@
 ![ccstatus](docs/title.png)
 
-Status line para o Claude Code CLI. Um script bash que lê JSON do stdin (payload passado pelo Claude Code a cada render) e imprime uma linha ANSI colorida com diretório, git, modelo, uso de contexto, custo da sessão e rate limits.
+Mod do Claude Code que desenha, acima do prompt, uma linha colorida com diretório, git, modelo, uso de contexto, custo da sessão e rate limits.
 
-Este README é escrito para um agente (Claude Code ou outro) instalar e configurar isso sozinho, sem intervenção humana além de aprovar os comandos.
+## Instalação
 
-## Instalação (para o agente executar)
+No prompt do Claude Code:
+
+```
+/plugin install ccstatus --marketplace luizfbalves/ccstatus
+```
+
+Responder `y` para adicionar o marketplace e escolher o escopo (user). O mod passa a rodar na hora, sem reiniciar.
+
+Fora de uma sessão:
 
 ```bash
-curl -fsSL -o ~/.claude/ccstatus.sh https://raw.githubusercontent.com/luizfbalves/ccstatus/main/ccstatus.sh
-chmod +x ~/.claude/ccstatus.sh
+claude plugin install ccstatus --marketplace luizfbalves/ccstatus
 ```
 
-Depois, editar `~/.claude/settings.json` (criar se não existir) e garantir a chave `statusLine`:
+### Migrando da versão em bash
 
-```json
-{
-  "statusLine": {
-    "type": "command",
-    "command": "bash \"~/.claude/ccstatus.sh\""
-  }
-}
-```
+A versão antiga era um `statusLine` em `~/.claude/settings.json` apontando para `~/.claude/ccstatus.sh`. Depois de instalar o mod, remover a chave `statusLine` do settings.json (fazendo merge, sem sobrescrever o arquivo) e apagar `~/.claude/ccstatus.sh`, senão as duas linhas aparecem juntas.
 
-Se o arquivo já tiver outras chaves, fazer merge — não sobrescrever o settings.json inteiro. Não é necessário reiniciar o Claude Code; a statusline é reavaliada a cada render.
+## De onde vem cada dado
 
-### Dependências
+| Seção | Fonte |
+|---|---|
+| diretório | `$.session.cwd()` (basename) |
+| git | `git status --porcelain=v2 --branch` via `$.process.run` |
+| modelo | `$.session.model()` |
+| effort | `effort` do último `turn.step` do loop principal |
+| contexto | `$.session.usage().context` |
+| custo | `$.session.usage().cost.usd` |
+| rate limits 5h / 7d | `$.session.usage().rateLimits` |
 
-`bash`, `jq`, `git`, `awk`, `date` — todas usualmente já presentes em macOS/Linux. Sem dependências de rede, sem pacotes npm/pip. O script não escreve em disco nem faz chamadas externas; é puramente stdin → stdout.
+A linha é recalculada em `session.start`, em cada `session.measure` (contexto, custo ou rate limit mudou) e ao fim de cada turno do loop principal.
 
-### Verificar que funcionou
+Em relação à versão bash, ficaram de fora o badge `fast` e o diff `+N-N` de linhas da sessão: a API de mods não expõe esses dois números.
+
+## Estrutura
+
+- `.claude-plugin/plugin.json` / `marketplace.json`: manifesto e marketplace de um plugin só
+- `hooks/register.tsx`: o módulo de hooks
+- `types/index.d.ts`: contrato do `$.state` (`ccstatus.snapshot`)
+- `tests/ccstatus.test.tsx`: testes do band (`claude plugin test .`)
+
+Dentro de `register.tsx`:
+
+- `pctColor(pct)`: gradiente contínuo verde `(21,128,61)` → âmbar `(180,131,15)` → vermelho `(185,28,28)`; também colore o custo, com `COST_CEILING_USD` ($30) equivalendo a 100%
+- `bar(pct, largura)`: barra `▓`/`░` (10 colunas para contexto, 6 para rate limits)
+- `fmtTokens(n)`: `50000` → `50k`, `1500000` → `1.5M`
+- `refresh($)`: monta o `Snapshot` e grava no atom; o hook `ui.render` de `AbovePrompt` só lê o atom e desenha
+- A paleta usa tons médio-saturados (estilo "600" do Tailwind) para manter contraste em tema claro e escuro
+
+Para adicionar uma seção: incluir o campo em `Snapshot` (`types/index.d.ts`), preenchê-lo em `refresh` e dar `parts.push(...)` no render.
+
+## Desenvolvimento
 
 ```bash
-echo '{"workspace":{"current_dir":"'"$HOME"'"},"model":{"display_name":"Test Model"},"context_window":{"total_input_tokens":50000,"context_window_size":200000,"used_percentage":25},"cost":{"total_cost_usd":1.23,"total_lines_added":10,"total_lines_removed":2}}' | bash ~/.claude/ccstatus.sh
+claude plugin validate .
+claude plugin test .
+claude --plugin-dir .   # sessão com o mod carregado da pasta
 ```
-
-Deve imprimir uma linha colorida sem erros no stderr.
-
-## Contrato de entrada (o que o Claude Code envia)
-
-O script lê um único JSON via stdin. Campos usados (todos opcionais — a seção correspondente da linha é omitida se ausente):
-
-| Campo | Tipo | Uso |
-|---|---|---|
-| `workspace.current_dir` / `cwd` | string | diretório exibido (basename) |
-| `model.display_name` / `model.id` | string | nome do modelo |
-| `cost.total_cost_usd` | number | custo USD acumulado da sessão |
-| `cost.total_lines_added` / `total_lines_removed` | number | diff de linhas na sessão |
-| `context_window.total_input_tokens` | number | tokens usados |
-| `context_window.context_window_size` | number | limite de tokens da janela |
-| `context_window.used_percentage` | number | % pronto (senão é calculado) |
-| `rate_limits.five_hour.used_percentage` / `.resets_at` | number / epoch | barra da janela de 5h |
-| `rate_limits.seven_day.used_percentage` / `.resets_at` | number / epoch | barra da janela de 7d |
-| `fast_mode` | boolean | badge `fast` ao lado do modelo quando `true` |
-| `effort` / `effort.level` | string \| object | badge `<nível>` (low/medium/high) ao lado do modelo quando `fast_mode` não está ativo |
-
-Git não vem no payload — o script roda `git -C "$cwd"` diretamente no diretório recebido.
-
-## Estrutura interna (para quem for editar)
-
-- `rgb <r> <g> <b>` — helper que gera escape ANSI truecolor (24-bit) a partir de componentes RGB (0-255)
-- `pct_rgb <pct>` — interpola RGB num gradiente contínuo verde `(21,128,61)` → âmbar `(180,131,15)` → vermelho `(185,28,28)`
-- `pct_color <pct>` — o mesmo, já como escape ANSI. Também colore o custo, com $30 equivalendo a 100%
-- `bar <pct> <largura>` — desenha barra `▓`/`░` de `largura` colunas (default 10 para contexto, 6 para rate limits), colorida via `pct_color`
-- `fmt_tokens <n>` — formata `50000` → `50k`, `1500000` → `1.5M`
-- Cada seção da linha (`git_part`, `model_part`, `cost_part`, `ctx_part`, `rate_part`) é montada isoladamente e só concatenada ao final se não-vazia, separada por `SEP` (` │ ` em cinza médio)
-- A paleta (topo do arquivo) usa tons médio-saturados (estilo "600" do Tailwind) para manter contraste em terminal claro e escuro — pastéis claros e quase-pretos só funcionam num dos dois temas
-- `LC_ALL=C` garante ponto decimal e dia da semana em inglês em qualquer locale
-
-Para mudar o gradiente: editar os RGBs em `pct_rgb`. Para mudar o teto de custo: editar o `30` em `cost_col`. Para mudar largura das barras: editar os literais `10`/`6` nas chamadas a `bar`. Para adicionar uma seção nova: seguir o padrão — montar `<nome>_part=""`, preencher condicionalmente, e adicionar `[ -n "$<nome>_part" ] && parts="${parts}${SEP}${<nome>_part}"` perto do final do arquivo, antes do `printf '%b' "$parts"`.
 
 ## Preview
 
 ![Exemplo da ccstatus rodando no terminal](docs/preview.png)
 
 ```
-orulpro │ main *3 │ Sonnet 5 │ ctx ▓▓▓▓▓▓░░░░ 55% 550k/1.0M │ $1.95 +69-37 │ 5h ▓▓▓░░░ 55% 12h33  7d ▓▓░░░░ 26% Sun
+orulpro │ main *3 │ Sonnet 5 high │ ctx ▓▓▓▓▓▓░░░░ 55% 550k/1.0M │ $1.95 │ 5h ▓▓▓░░░ 55% 12h33  7d ▓▓░░░░ 26% Sun
 ```
 
 `*N` após a branch = arquivos modificados; `↑N`/`↓N` = commits à frente/atrás do upstream.
-
-Requer terminal com truecolor (24-bit ANSI) — iTerm2, Terminal.app, Windows Terminal, Alacritty, kitty e WezTerm já suportam. Funciona com qualquer fonte.
-
-## Atualizar depois de instalado
-
-Re-executar o comando de instalação sobrescreve `~/.claude/ccstatus.sh` com a versão mais recente do `main`. Não há versionamento/pin — se for preciso reprodutibilidade, fixar um commit SHA na URL do `curl` em vez de `main`.
